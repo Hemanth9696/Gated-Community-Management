@@ -1,0 +1,2 @@
+# Tkinter comes pre-installed with Python.
+# No external dependencies required for this project.

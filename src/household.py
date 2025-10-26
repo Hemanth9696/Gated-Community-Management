@@ -1,3 +1,4 @@
+import sqlite3
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 
@@ -91,6 +92,74 @@ class Community:
 
     def get_bills(self):
         return self.bills
+class Database:
+    def __init__(self, db_name="community.db"):
+        self.conn = sqlite3.connect(db_name)
+        self.create_tables()
+
+    def create_tables(self):
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS houses (
+                house_id INTEGER PRIMARY KEY,
+                owner TEXT,
+                residents TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS services (
+                service_id INTEGER PRIMARY KEY,
+                name TEXT,
+                provider TEXT,
+                cost INTEGER
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS bills (
+                bill_id INTEGER PRIMARY KEY,
+                house_id INTEGER,
+                amount INTEGER,
+                status TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS requests (
+                request_id INTEGER PRIMARY KEY,
+                house_id INTEGER,
+                service_id INTEGER,
+                status TEXT
+            )
+        """)
+        self.conn.commit()
+
+    def insert_house(self, house):
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO houses VALUES (?, ?, ?)", 
+                       (house.house_id, house.owner, ', '.join(house.residents)))
+        self.conn.commit()
+
+    def insert_service(self, service):
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO services VALUES (?, ?, ?, ?)", 
+                       (service.service_id, service.name, service.provider, service.cost))
+        self.conn.commit()
+
+    def insert_bill(self, bill):
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO bills VALUES (?, ?, ?, ?)", 
+                       (bill.bill_id, bill.house.house_id, bill.amount, bill.status))
+        self.conn.commit()
+
+    def insert_request(self, request):
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO requests VALUES (?, ?, ?, ?)", 
+                       (request.request_id, request.house.house_id, request.service.service_id, request.status))
+        self.conn.commit()
+
+    def update_bill_status(self, bill_id, status):
+        cursor = self.conn.cursor()
+        cursor.execute("UPDATE bills SET status = ? WHERE bill_id = ?", (status, bill_id))
+        self.conn.commit()
 
 
 # ------------------ GUI ------------------
@@ -158,25 +227,39 @@ class GatedCommunityApp:
 # ------------------ Run App ------------------
 
 if __name__ == "__main__":
+    db = Database("community.db")  # Initialize database
     community = Community("Green Valley Residency")
 
+    # Add houses
     h1 = House(1, "Ravi")
     h1.add_resident("Anita")
     community.add_house(h1)
+    db.insert_house(h1)
 
     h2 = House(2, "John")
     h2.add_resident("Alice")
     community.add_house(h2)
-    
-    
-    h3 = House(3, "Hemanth")
-    h3.add_resident("jon snow")
-    community.add_house(h3)
+    db.insert_house(h2)
 
-    community.add_service(Service(1, "Plumbing", "Mr. Kumar", 500))
-    community.add_service(Service(2, "Grocery Delivery", "FreshMart", 200))
-    community.add_service(Service(3, "Electrician", "PowerFix", 700))
+    h3 = House(3, "Hemanth")
+    h3.add_resident("Jon Snow")
+    community.add_house(h3)
+    db.insert_house(h3)
+
+    # Add services
+    s1 = Service(1, "Plumbing", "Mr. Kumar", 500)
+    community.add_service(s1)
+    db.insert_service(s1)
+
+    s2 = Service(2, "Grocery Delivery", "FreshMart", 200)
+    community.add_service(s2)
+    db.insert_service(s2)
+
+    s3 = Service(3, "Electrician", "PowerFix", 700)
+    community.add_service(s3)
+    db.insert_service(s3)
 
     root = tk.Tk()
     app = GatedCommunityApp(root, community)
     root.mainloop()
+
